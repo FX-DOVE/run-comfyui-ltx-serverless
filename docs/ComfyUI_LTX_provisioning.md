@@ -12,3 +12,4 @@
 - [upscale](provisioning/hf_upscale.md)
 - [vfi](provisioning/hf_frame_interpolation.md)
 - [audio](provisioning/hf_audio.md)
+- [SeedVR2](provisioning/hf_seedvr2.md)
