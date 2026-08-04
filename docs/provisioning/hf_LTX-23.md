@@ -1,6 +1,7 @@
 # Manual provisioning LTX-2.3
 
 - [Kijai](https://huggingface.co/Kijai/LTX2.3_comfy)
+- [PrunaVAED](https://huggingface.co/PrunaAI/PrunaVAED)
 - [Lightricks](https://huggingface.co/Lightricks/LTX-2.3)
 - [Union-Control](https://huggingface.co/Lightricks/LTX-2.3-22b-IC-LoRA-Union-Control)
 - [Motion-Track-Control](https://huggingface.co/Lightricks/LTX-2.3-22b-IC-LoRA-Motion-Track-Control)
@@ -53,6 +54,13 @@ hf download Kijai/LTX2.3_comfy vae/LTX23_audio_vae_bf16.safetensors \
 
 ```bash
 hf download Kijai/LTX2.3_comfy vae/LTX23_video_vae_bf16.safetensors \
+--local-dir /workspace/ComfyUI/models/vae/
+```
+
+### Pruna video bf16
+
+```bash
+hf download Kijai/LTX2.3_comfy vae/pruna_ltx2.3_vae_comfy_bf16.safetensors \
 --local-dir /workspace/ComfyUI/models/vae/
 ```
 
@@ -218,7 +226,7 @@ hf download Lightricks/LTX-2.3-22b-IC-LoRA-LipDub ltx-2.3-22b-ic-lora-lipdub-0.9
   --local-dir /workspace/ComfyUI/models/loras
 ```
 
-## Realisdance 
+## Realisdance
 
 ```bash
 hf download Kijai/LTX2-IC-LoRAs realisdance_ltx2.3_ic-lora_step_02000.safetensors \
