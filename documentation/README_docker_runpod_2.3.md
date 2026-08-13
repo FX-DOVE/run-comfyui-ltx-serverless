@@ -63,3 +63,4 @@
 
 - [WAN 2.2](https://comfyui.rozenlaan.site/ComfyUI_WAN/)
 - [Image models](https://comfyui.rozenlaan.site/ComfyUI_image/)
+- [Minimax](https://comfyui.rozenlaan.site/ComfyUI_MiniMax/)

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # run-comfyui-ltx
-FROM ls250824/comfyui-runtime:03082026
+FROM ls250824/comfyui-runtime2:12082026
 
 # Set Working Directory
 WORKDIR /ComfyUI
@@ -45,7 +45,6 @@ RUN --mount=type=cache,target=/root/.cache/git \
     git clone --depth=1 --filter=blob:none https://github.com/9nate-drake/Comfyui-SecNodes.git && \
     git clone --depth=1 --filter=blob:none https://github.com/PozzettiAndrea/ComfyUI-SAM3.git && \
     git clone --depth=1 --filter=blob:none https://github.com/geroldmeisinger/ComfyUI-outputlists-combiner.git && \
-    git clone --depth=1 --filter=blob:none https://github.com/rethink-studios/comfyui-model-linker-desktop.git && \
     git clone --depth=1 --filter=blob:none https://github.com/Lightricks/ComfyUI-LTXVideo.git && \
     git clone --depth=1 --filter=blob:none https://github.com/cubiq/ComfyUI_essentials.git && \
     git clone --depth=1 --filter=blob:none https://github.com/princepainter/ComfyUI-PainterLTXV2.git && \
@@ -56,6 +55,7 @@ RUN --mount=type=cache,target=/root/.cache/git \
     git clone --depth=1 --filter=blob:none https://github.com/judian17/ComfyUI_YOLO_For_Multi_SDPose_Detection.git  && \
     git clone --depth=1 --filter=blob:none https://github.com/wuwukaka/ComfyUI-BodyRatioMapper.git && \
 	git clone --depth=1 --filter=blob:none https://github.com/afloy011-spec/afloy_audio_tools.git && \
+    git clone --depth=1 --filter=blob:none https://github.com/kianxyzw/comfyui-model-linker.git && \
     git clone --depth=1 --filter=blob:none https://github.com/TenStrip/10S-Comfy-nodes.git
 
 WORKDIR /ComfyUI/custom_nodes/ComfyUI-RMBG
@@ -171,17 +171,18 @@ else:
 
 PY
 
-# Clone documentation repo into /comfyui-docs
+# Clone the documentation repo and copy the required files in one layer.
+# Keeping these operations together prevents a stale clone layer from being reused
+# when a documentation filename changes upstream.
 RUN --mount=type=cache,target=/root/.cache/git \
-    git clone --depth=1 --filter=blob:none https://github.com/jalberty2018/comfyui-docs.git /comfyui-docs
-
-# Copy docs *inside* the image
-RUN mkdir -p /docs && \
-    cp /comfyui-docs/ComfyUI_LTX_configuration.md /docs/ComfyUI_LTX_configuration.md && \
+    git clone --depth=1 --filter=blob:none https://github.com/jalberty2018/comfyui-docs.git /comfyui-docs && \
+    mkdir -p /docs && \
+    cp /comfyui-docs/RunPod_configuration.md /docs/ComfyUI_LTX_configuration.md && \
     cp /comfyui-docs/ComfyUI_LTX_custom_nodes.md /docs/ComfyUI_LTX_custom_nodes.md && \
     cp /comfyui-docs/ComfyUI_LTX_hardware.md /docs/ComfyUI_LTX_hardware.md && \
     cp /comfyui-docs/ComfyUI_LTX_image_setup.md /docs/ComfyUI_LTX_image_setup.md && \
-    cp /comfyui-docs/ComfyUI_LTX_resources.md /docs/ComfyUI_LTX_resources.md
+    cp /comfyui-docs/ComfyUI_LTX_resources.md /docs/ComfyUI_LTX_resources.md && \
+    rm -rf /comfyui-docs
 
 # Copy Scripts and documentation
 COPY --chmod=755 start.sh onworkspace/comfyui-on-workspace.sh onworkspace/files-on-workspace.sh onworkspace/test-on-workspace.sh onworkspace/docs-on-workspace.sh / 
@@ -190,9 +191,6 @@ COPY --chmod=644 onworkspace/batch.txt /batch.txt
 COPY --chmod=644 test/ /test
 COPY --chmod=644 docs/ /docs
 
-# Cleanup
-RUN rm -rf /comfyui-docs
-
 # Set Workspace
 WORKDIR /workspace
 
@@ -200,7 +198,7 @@ WORKDIR /workspace
 EXPOSE 8188 9000
 
 # Labels
-LABEL org.opencontainers.image.title="ComfyUI 0.30.0 for LTX-2.x inference" \
+LABEL org.opencontainers.image.title="ComfyUI 0.32.0 for LTX-2.x inference" \
       org.opencontainers.image.description="ComfyUI + internal manager + flash-attn + sageattention + onnxruntime-gpu + torch_generic_nms + code-server + civitai downloader + huggingface_hub + custom_nodes" \
       org.opencontainers.image.source="https://hub.docker.com/r/ls250824/run-comfyui-ltx" \
       org.opencontainers.image.licenses="MIT"

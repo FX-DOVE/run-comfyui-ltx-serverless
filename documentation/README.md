@@ -3,16 +3,16 @@
 ## Pre-Installed Custom Nodes
 
 - Open ComfyUI manager installed custom nodes.
-- [custom_nodes](../docs/ComfyUI_LTX_custom_nodes.md)
+- [custom_nodes](docs/ComfyUI_LTX_custom_nodes.md)
 
 ## Documentation
 
-- [Model provisioning](../docs/ComfyUI_LTX_provisioning.md)
-- [Resources](../docs/ComfyUI_LTX_resources.md)
-- [Image setup](../docs/ComfyUI_LTX_image_setup.md)
-- [Environment variables](../docs/ComfyUI_LTX_configuration.md)
-- [Hardware Requirements](../docs/ComfyUI_LTX_hardware.md)
-- [Tutorial](https://comfyui.rozenlaan.site/ComfyUI_LTX_tutorial/)
+- [Model provisioning](docs/ComfyUI_LTX_provisioning.md)
+- [Resources](docs/ComfyUI_LTX_resources.md)
+- [Image setup](docs/ComfyUI_LTX_image_setup.md)
+- [Environment variables](docs/ComfyUI_LTX_configuration.md)
+- [Hardware Requirements](docs/ComfyUI_LTX_hardware.md)
+- [Tutorial](https://comfyui.rozenlaan.site/ComfyUI_tutorial/)
 - [Update](https://comfyui.rozenlaan.site/ComfyUI_LTX_update/)
 
 ## Workflows
@@ -59,8 +59,7 @@ civitai_red <VERSION_ID> /workspace/ComfyUI/models/loras
 ## Clean up  
 
 ```bash
-rm -rf /workspace/output/ /workspace/input/ /workspace/ComfyUI/output/ /workspace/ComfyUI/models/loras/
-ncdu
+rm -rf /workspace/output/ /workspace/input/ /workspace/ComfyUI/output/ /workspace/ComfyUI/input/ /workspace/ComfyUI/models/loras/
 ```
 
 ## Utilities  
@@ -73,6 +72,7 @@ mc         # Midnight Commander (file manager)
 nano       # Text Editor
 ncdu       # Clean Up
 unzip      # uncompress
+age        # encryption
 7z         # Archiving
 runpodctl  # runpod pod management
 ```

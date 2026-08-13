@@ -42,6 +42,7 @@ A streamlined and automated environment for running **ComfyUI** with **LTX-2.3 v
 - [⚙️ Start](https://comfyui.rozenlaan.site/ComfyUI_LTX)
 - [📚 Tutorial](https://comfyui.rozenlaan.site/ComfyUI_LTX_tutorial)
 - [⚙️ Provisioning examples](docs/ComfyUI_LTX_provisioning.md)
+- [🧩 RunPod environment profiles](documentation/runpod-env-templates.md)
 
 ## 🐳 Docker Images
 
@@ -49,7 +50,7 @@ A streamlined and automated environment for running **ComfyUI** with **LTX-2.3 v
 
 - **PyTorch Runtime**  [![Docker](https://img.shields.io/docker/v/ls250824/pytorch-cuda-ubuntu-runtime)](https://hub.docker.com/r/ls250824/pytorch-cuda-ubuntu-runtime)
 
-- **ComfyUI Runtime**  [![Docker](https://img.shields.io/docker/v/ls250824/comfyui-runtime)](https://hub.docker.com/r/ls250824/comfyui-runtime)
+- **ComfyUI Runtime**  [![Docker](https://img.shields.io/docker/v/ls250824/comfyui-runtime2)](https://hub.docker.com/r/ls250824/comfyui-runtime2)
 
 ### Custom Image
 

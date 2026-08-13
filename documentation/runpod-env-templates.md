@@ -1,5 +1,70 @@
 # Environment variables for templates
 
+## LTX-2.5 public ungated + Heretic encoder
+
+### Public
+
+```bash
+VRAM_THRESHOLD=48
+HF_MODEL_HVRAM_DIFFUSION_MODELS1=dummy9996/LTX-2.5-22b-ungate
+HF_MODEL_HVRAM_DIFFUSION_MODELS_FILENAME1=ltx-2.5-22b-dev-transformer-bf16.safetensors
+HF_MODEL_LVRAM_DIFFUSION_MODELS1=dummy9996/LTX-2.5-22b-ungate
+HF_MODEL_LVRAM_DIFFUSION_MODELS_FILENAME1=ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors
+HF_MODEL_HVRAM_TEXT_ENCODERS1=DeepNeuralNerd/Gemma-4-12B-it-uncensored-heretic-DeepNeuralNerd-LTX_2.5_ComfyUI
+HF_MODEL_HVRAM_TEXT_ENCODERS_FILENAME1=Gemma-4-12B-it-uncensored-heretic - DeepNeuralNerd -LTX 2.5-ComfyUI-bf16.safetensors
+HF_MODEL_LVRAM_TEXT_ENCODERS1=DeepNeuralNerd/Gemma-4-12B-it-uncensored-heretic-DeepNeuralNerd-LTX_2.5_ComfyUI
+HF_MODEL_LVRAM_TEXT_ENCODERS_FILENAME1=Gemma-4-12B-it-uncensored-heretic - DeepNeuralNerd -LTX 2.5-ComfyUI-int8convrot.safetensors
+HF_MODEL_LORA1=dummy9996/LTX-2.5-22b-ungate
+HF_MODEL_LORA_FILENAME1=ltx-2.5-22b-distilled-lora-450-bf16.safetensors
+HF_MODEL_VAE1=dummy9996/LTX-2.5-22b-ungate
+HF_MODEL_VAE_FILENAME1=ltx-2.5-video-vae-conv-bf16.safetensors
+HF_MODEL_VAE2=dummy9996/LTX-2.5-22b-ungate
+HF_MODEL_VAE_FILENAME2=ltx-2.5-audio-vae-bf16.safetensors
+HF_MODEL_VAE3=comfyicu/LTX-2.5
+HF_MODEL_VAE_FILENAME3=vae/ltx-2.5-video-vae-bf16.safetensors
+HF_MODEL_LATENT_UPSCALE1=dummy9996/LTX-2.5-22b-ungate
+HF_MODEL_LATENT_UPSCALE_FILENAME1=ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors
+HF_MODEL_LATENT_UPSCALE2=dummy9996/LTX-2.5-22b-ungate
+HF_MODEL_LATENT_UPSCALE_FILENAME2=ltx-2.5-latent-temporal-upscaler-x2-bf16-1.0.safetensors
+HF_MODEL_PATCHES1=dummy9996/LTX-2.5-22b-ungate
+HF_MODEL_PATCHES_FILENAME1=ltx-2.5-duration-head-bf16.safetensors
+WORKFLOW1=https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_t2v.json
+WORKFLOW2=https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v.json
+```
+
+### Private
+
+```bash
+VRAM_THRESHOLD=48
+CIVITAI_TOKEN={{ RUNPOD_SECRET_CivitAI_API_KEY }}
+HF_TOKEN={{ RUNPOD_SECRET_HF_TOKEN_WRITE }}
+PASSWORD={{ RUNPOD_SECRET_CODE-SERVER-NEW }}
+HF_MODEL_HVRAM_DIFFUSION_MODELS1=Lightricks/LTX-2.5
+HF_MODEL_HVRAM_DIFFUSION_MODELS_FILENAME1=diffusion_models/ltx-2.5-22b-dev-transformer-bf16.safetensors
+HF_MODEL_LVRAM_DIFFUSION_MODELS1=Lightricks/LTX-2.5
+HF_MODEL_LVRAM_DIFFUSION_MODELS_FILENAME1=diffusion_models/ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors
+HF_MODEL_HVRAM_TEXT_ENCODERS1=DeepNeuralNerd/Gemma-4-12B-it-uncensored-heretic-DeepNeuralNerd-LTX_2.5_ComfyUI
+HF_MODEL_HVRAM_TEXT_ENCODERS_FILENAME1=Gemma-4-12B-it-uncensored-heretic - DeepNeuralNerd -LTX 2.5-ComfyUI-bf16.safetensors
+HF_MODEL_LVRAM_TEXT_ENCODERS1=DeepNeuralNerd/Gemma-4-12B-it-uncensored-heretic-DeepNeuralNerd-LTX_2.5_ComfyUI
+HF_MODEL_LVRAM_TEXT_ENCODERS_FILENAME1=Gemma-4-12B-it-uncensored-heretic - DeepNeuralNerd -LTX 2.5-ComfyUI-int8convrot.safetensors
+HF_MODEL_LORA1=Lightricks/LTX-2.5
+HF_MODEL_LORA_FILENAME1=loras/ltx-2.5-22b-distilled-lora-450-bf16.safetensors
+HF_MODEL_VAE1=Lightricks/LTX-2.5
+HF_MODEL_VAE_FILENAME1=vae/ltx-2.5-video-vae-bf16.safetensors
+HF_MODEL_VAE2=Lightricks/LTX-2.5
+HF_MODEL_VAE_FILENAME2=vae/ltx-2.5-video-vae-conv-bf16.safetensors
+HF_MODEL_VAE3=Lightricks/LTX-2.5
+HF_MODEL_VAE_FILENAME3=vae/ltx-2.5-audio-vae-bf16.safetensors
+HF_MODEL_LATENT_UPSCALE1=Lightricks/LTX-2.5
+HF_MODEL_LATENT_UPSCALE_FILENAME1=latent_upscale_models/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors
+HF_MODEL_LATENT_UPSCALE2=Lightricks/LTX-2.5
+HF_MODEL_LATENT_UPSCALE_FILENAME2=latent_upscale_models/ltx-2.5-latent-temporal-upscaler-x2-bf16-1.0.safetensors
+HF_MODEL_PATCHES1=Lightricks/LTX-2.5
+HF_MODEL_PATCHES_FILENAME1=model_patches/ltx-2.5-duration-head-bf16.safetensors
+WORKFLOW1=https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_t2v.json
+WORKFLOW2=https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v.json
+```
+
 ## LTX-2.3 dev
 
 ### Public
