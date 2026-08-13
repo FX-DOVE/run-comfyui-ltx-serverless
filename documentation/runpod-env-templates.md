@@ -1,8 +1,8 @@
 # Environment variables for templates
 
-## LTX-2.5 public ungated + Heretic encoder
+## LTX-2.5
 
-### Public
+### Public ungated + Heretic encoder
 
 ```bash
 VRAM_THRESHOLD=48
@@ -28,11 +28,11 @@ HF_MODEL_LATENT_UPSCALE2=dummy9996/LTX-2.5-22b-ungate
 HF_MODEL_LATENT_UPSCALE_FILENAME2=ltx-2.5-latent-temporal-upscaler-x2-bf16-1.0.safetensors
 HF_MODEL_PATCHES1=dummy9996/LTX-2.5-22b-ungate
 HF_MODEL_PATCHES_FILENAME1=ltx-2.5-duration-head-bf16.safetensors
-WORKFLOW1=https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_t2v.json
-WORKFLOW2=https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v.json
+WORKFLOW1=https://provisioning.rozenlaan.site/ltx/LTX-25-t2v-pod.json
+WORKFLOW2=https://provisioning.rozenlaan.site/ltx/LTX-25-i2v-pod.json
 ```
 
-### Private
+### Private gated + Heretic encoder
 
 ```bash
 VRAM_THRESHOLD=48
@@ -61,8 +61,8 @@ HF_MODEL_LATENT_UPSCALE2=Lightricks/LTX-2.5
 HF_MODEL_LATENT_UPSCALE_FILENAME2=latent_upscale_models/ltx-2.5-latent-temporal-upscaler-x2-bf16-1.0.safetensors
 HF_MODEL_PATCHES1=Lightricks/LTX-2.5
 HF_MODEL_PATCHES_FILENAME1=model_patches/ltx-2.5-duration-head-bf16.safetensors
-WORKFLOW1=https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_t2v.json
-WORKFLOW2=https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v.json
+WORKFLOW1=https://provisioning.rozenlaan.site/ltx/LTX-25-t2v-pod.json
+WORKFLOW2=https://provisioning.rozenlaan.site/ltx/LTX-25-i2v-pod.json
 ```
 
 ## LTX-2.3 dev
@@ -94,7 +94,7 @@ HF_MODEL_LORA3=Lightricks/LTX-2.3-22b-IC-LoRA-Union-Control
 HF_MODEL_LORA_FILENAME3=ltx-2.3-22b-ic-lora-union-control-ref0.5.safetensors
 HF_MODEL_LORA4=Lightricks/LTX-2.3-22b-IC-LoRA-Motion-Track-Control
 HF_MODEL_LORA_FILENAME4=ltx-2.3-22b-ic-lora-motion-track-control-ref0.5.safetensors
-HF_MODEL_LORA5=Cseti/LTX2.3-22B_IC-LoRA-Cameraman_v1
+HF_MODEL_LORA5=Cseti/LTX2.3-22B_IC-LoRA-Cameraman_v
 HF_MODEL_LORA_FILENAME5=LTX2.3-22B_IC-LoRA-Cameraman_v1_10500.safetensors
 HF_MODEL_LORA6=Comfy-Org/ltx-2.3
 HF_MODEL_LORA_FILENAME6=split_files/loras/ltx-2.3-id-lora-celebvhq-3k.safetensors

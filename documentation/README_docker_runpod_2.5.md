@@ -6,9 +6,9 @@ pod startup through environment variables.
 
 ## Features
 
-- Complete LTX-2.5 22B dev chain with the distilled LoRA.
+- Complete LTX-2.x chain
 - Automatic BF16 or ComfyUI int8-convrot transformer selection by GPU VRAM.
-- Optional community Heretic BF16 and int8-convrot text encoder profiles.
+- Community Heretic BF16 and int8-convrot text encoder profiles.
 - Video and audio VAEs, spatial and temporal latent upscalers, and duration
   head patch.
 - CUDA 12.8 runtime with compiled attention and GPU acceleration packages.
@@ -18,7 +18,8 @@ pod startup through environment variables.
 
 ### Template
 
-[Deploy the LTX ComfyUI template on RunPod](https://console.runpod.io/deploy?template=p4f6rm9tb4&ref=se4tkc5o)
+- [**👉 One-click Deploy on RunPod LTX-2.5 i2v/t2v vi2v/vt2v dev bf16/int8 convrot**](https://console.runpod.io/deploy?template=ka3hvli4kf&ref=se4tkc5o)
+- [**👉 One-click Deploy on RunPod LTX-2.3 i2v/t2v vi2v/vt2v dev bf16/fp8**](https://console.runpod.io/deploy?template=p4f6rm9tb4&ref=se4tkc5o)
 
 ## GPU and precision selection
 
@@ -32,10 +33,6 @@ below the threshold receive the int8-convrot transformer.
 | RTX 5090 | 32 GB | int8-convrot | Heretic |
 | L40S | 48 GB nominal | int8-convrot | Heretic |
 | RTX PRO 6000 Blackwell | 96 GB | BF16 | Heretic |
-
-Choose the Heretic BF16 profile explicitly if you want that encoder; its
-precision is fixed independently of the transformer selected by the VRAM
-threshold. The encoder and transformer precisions do not need to match.
 
 ## Storage requirements
 

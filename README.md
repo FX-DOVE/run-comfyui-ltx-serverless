@@ -1,20 +1,16 @@
 [![Docker Image Version](https://img.shields.io/docker/v/ls250824/run-comfyui-ltx)](https://hub.docker.com/r/ls250824/run-comfyui-ltx)
 
-# 🚀 Run LTX-2.3 with ComfyUI with provisioning — RunPod
+# 🚀 Run LTX-2.x with ComfyUI with provisioning — RunPod
 
-## bf16
+## int8 convrot
 
-![Pod running on L40S native comfyUI](images/runpod_L40S_LTX.jpg)
-
-## fp8
-
-![Pod running on RTX A5000 native comfyUI](images/runpod_A5000_LTX.jpeg)
+![Pod running on L40S native comfyUI](images/runpod_L40S_LTX25.jpeg)
 
 ## Workflow i2v
 
-![Workflow i2v](images/ai-generated-LTX.jpg)
+![Workflow i2v](images/ai-generated-i2v-LTX25.jpg)
 
-A streamlined and automated environment for running **ComfyUI** with **LTX-2.3 video models**, optimized for use on RunPod
+A streamlined and automated environment for running **ComfyUI** with **LTX-2.x video models**, optimized for use on RunPod
 
 ## 🔧 Features
 
@@ -35,7 +31,8 @@ A streamlined and automated environment for running **ComfyUI** with **LTX-2.3 v
 
 ### Runpod templates
 
-[**👉 One-click Deploy on RunPod LTX-2.3**](https://console.runpod.io/deploy?template=p4f6rm9tb4&ref=se4tkc5o)
+- [**👉 One-click Deploy on RunPod LTX-2.5 i2v/t2v vi2v/vt2v dev bf16/int8 convrot**](https://console.runpod.io/deploy?template=ka3hvli4kf&ref=se4tkc5o)
+- [**👉 One-click Deploy on RunPod LTX-2.3 i2v/t2v vi2v/vt2v dev bf16/fp8**](https://console.runpod.io/deploy?template=p4f6rm9tb4&ref=se4tkc5o)
 
 ### Documentation
 
