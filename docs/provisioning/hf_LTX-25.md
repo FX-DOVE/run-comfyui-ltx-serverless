@@ -4,38 +4,23 @@ This guide installs the complete ComfyUI chain for the LTX-2.5 22B dev
 transformer with the distilled LoRA. The component list follows the
 [LTX-2.5 release overview](https://comfyui-wiki.com/en/news/2026-08-11-ltx-2-5-open-weights-release)
 and was verified against the
-[official Lightricks model repository](https://huggingface.co/Lightricks/LTX-2.5).
+[official Lightricks model repository](https://huggingface.co/Lightricks/LTX-2.5)
+and the public ungated
+[comfyicu mirror](https://huggingface.co/comfyicu/LTX-2.5).
 
-The complete selected chain requires approximately 82 GB with the BF16 dev
-transformer and text encoder, or approximately 51 GB with both ComfyUI
-int8-convrot variants. The optional prompt enhancer adds approximately 10 GB.
-These estimates do not include ComfyUI, custom nodes, or generated outputs.
-
-## Public ungated community provisioning
+## Ungated
 
 ```bash
-hf download dummy9996/LTX-2.5-22b-ungate \
-  ltx-2.5-22b-dev-transformer-bf16.safetensors \
-  ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors \
-  --local-dir /workspace/ComfyUI/models/diffusion_models/
-
-hf download dummy9996/LTX-2.5-22b-ungate \
-  ltx-2.5-22b-distilled-lora-450-bf16.safetensors \
-  --local-dir /workspace/ComfyUI/models/loras/
-
-hf download dummy9996/LTX-2.5-22b-ungate \
-  ltx-2.5-video-vae-conv-bf16.safetensors \
-  ltx-2.5-audio-vae-bf16.safetensors \
-  --local-dir /workspace/ComfyUI/models/vae/
-
-hf download dummy9996/LTX-2.5-22b-ungate \
-  ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors \
-  ltx-2.5-latent-temporal-upscaler-x2-bf16-1.0.safetensors \
-  --local-dir /workspace/ComfyUI/models/latent_upscale_models/
-
-hf download dummy9996/LTX-2.5-22b-ungate \
-  ltx-2.5-duration-head-bf16.safetensors \
-  --local-dir /workspace/ComfyUI/models/model_patches/
+hf download comfyicu/LTX-2.5 \
+  diffusion_models/ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors \
+  loras/ltx-2.5-22b-distilled-lora-450-bf16.safetensors \
+  vae/ltx-2.5-video-vae-bf16.safetensors \
+  vae/ltx-2.5-video-vae-conv-bf16.safetensors \
+  vae/ltx-2.5-audio-vae-bf16.safetensors \
+  latent_upscale_models/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors \
+  latent_upscale_models/ltx-2.5-latent-temporal-upscaler-x2-bf16-1.0.safetensors \
+  model_patches/ltx-2.5-duration-head-bf16.safetensors \
+  --local-dir /workspace/ComfyUI/models/
 ```
 
 ## Diffusion model
@@ -87,7 +72,7 @@ hf download Lightricks/LTX-2.5 \
 
 ### Community Heretic encoders
 
-T#### Heretic BF16
+#### Heretic BF16
 
 ```bash
 hf download \
@@ -105,16 +90,6 @@ hf download \
   --local-dir /workspace/ComfyUI/models/text_encoders/
 ```
 
-### Prompt enhancer
-
-The prompt enhancer is optional, but it is included in the full RunPod profile.
-
-```bash
-hf download Comfy-Org/gemma-4 \
-  text_encoders/gemma4_e2b_it_bf16.safetensors \
-  --local-dir /workspace/ComfyUI/models/text_encoders/
-```
-
 ## Video and audio VAEs
 
 ### Diffusion video decoder
@@ -128,9 +103,6 @@ hf download Lightricks/LTX-2.5 \
 ```
 
 ### Convolutional video decoder
-
-Faster and lighter at inference time. The complete RunPod profile downloads
-both video decoders so either workflow variant can be selected.
 
 ```bash
 hf download Lightricks/LTX-2.5 \
