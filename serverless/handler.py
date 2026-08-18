@@ -1,0 +1,263 @@
+#!/usr/bin/env python3
+"""
+handler.py - RunPod Serverless Handler for LTX-2.5 ComfyUI Worker.
+Handles job requests, constructs and queues workflows, monitors generation, and returns video URLs.
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import sys
+import threading
+import time
+from pathlib import Path
+from typing import Any, Dict
+
+import runpod
+
+from comfy_client import ComfyClient, ComfyUIExecutionError, ComfyUITimeoutError
+from health import full_health_check
+from storage import StorageManager
+from workflow import build_ltx25_t2v_workflow
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("runpod_handler")
+
+# Concurrency lock to ensure one inference at a time per GPU worker
+worker_lock = threading.Lock()
+
+COMFY_HOST = os.getenv("COMFYUI_HOST", "127.0.0.1")
+COMFY_PORT = int(os.getenv("COMFYUI_PORT", "8188"))
+WORKSPACE_DIR = os.getenv("WORKSPACE_DIR", "/workspace")
+COMFY_OUTPUT_DIR = os.getenv("COMFYUI_OUTPUT_DIR", f"{WORKSPACE_DIR}/ComfyUI/output")
+
+client = ComfyClient(host=COMFY_HOST, port=COMFY_PORT)
+storage = StorageManager()
+
+
+def get_vram_peak_gb() -> float:
+    """Measure peak allocated CUDA memory in GB."""
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            return round(torch.cuda.max_memory_allocated() / (1024**3), 2)
+    except Exception:
+        pass
+    return 0.0
+
+
+def reset_vram_stats() -> None:
+    """Reset CUDA peak memory stats."""
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
+    except Exception:
+        pass
+
+
+def validate_and_parse_input(job_input: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate and sanitize user input parameters."""
+    prompt = job_input.get("prompt")
+    if not prompt or not isinstance(prompt, str) or not prompt.strip():
+        raise ValueError("Field 'prompt' is required and must be a non-empty string.")
+
+    negative_prompt = job_input.get(
+        "negative_prompt",
+        "worst quality, inconsistent motion, blurry, low resolution, distorted, jitter, static",
+    )
+
+    width = int(job_input.get("width", 768))
+    height = int(job_input.get("height", 432))
+    num_frames = int(job_input.get("num_frames", job_input.get("frames", 49)))
+    fps = int(job_input.get("fps", 24))
+    steps = int(job_input.get("steps", 20))
+    cfg = float(job_input.get("cfg", 3.0))
+    seed = job_input.get("seed")
+    if seed is not None:
+        seed = int(seed)
+
+    sampler_name = job_input.get("sampler_name", "euler")
+    scheduler = job_input.get("scheduler", "simple")
+    use_distilled_lora = bool(job_input.get("use_distilled_lora", True))
+    lora_strength = float(job_input.get("lora_strength", 1.0))
+    return_base64 = bool(job_input.get("return_base64", False))
+    upload_s3 = job_input.get("upload_s3")
+
+    # Clamping & Sanity Bounds
+    width = max(256, min(1920, width))
+    height = max(256, min(1080, height))
+    num_frames = max(9, min(257, num_frames))
+    steps = max(1, min(100, steps))
+    cfg = max(1.0, min(20.0, cfg))
+
+    return {
+        "prompt": prompt.strip(),
+        "negative_prompt": str(negative_prompt).strip(),
+        "width": width,
+        "height": height,
+        "num_frames": num_frames,
+        "fps": fps,
+        "steps": steps,
+        "cfg": cfg,
+        "seed": seed,
+        "sampler_name": sampler_name,
+        "scheduler": scheduler,
+        "use_distilled_lora": use_distilled_lora,
+        "lora_strength": lora_strength,
+        "return_base64": return_base64,
+        "upload_s3": upload_s3,
+    }
+
+
+def handler(job: Dict[str, Any]) -> Dict[str, Any]:
+    """RunPod Serverless Job Handler."""
+    job_id = job.get("id", "local_job")
+    job_input = job.get("input", {})
+
+    logger.info(f"Received job {job_id}")
+
+    # Support explicit health check request
+    if job_input.get("health_check"):
+        report = full_health_check(workspace_dir=WORKSPACE_DIR, host=COMFY_HOST, port=COMFY_PORT)
+        return {"status": "ok" if report["healthy"] else "degraded", "health": report}
+
+    with worker_lock:
+        start_time = time.time()
+        reset_vram_stats()
+
+        try:
+            # 1. Input parsing
+            params = validate_and_parse_input(job_input)
+
+            # 2. Check ComfyUI server readiness
+            if not client.is_ready(timeout_seconds=10):
+                raise RuntimeError("ComfyUI server is not responding at 127.0.0.1:8188")
+
+            # 3. Build workflow graph
+            custom_workflow = job_input.get("workflow")
+            if custom_workflow and isinstance(custom_workflow, dict):
+                logger.info(f"Using custom workflow provided in request for job {job_id}")
+                workflow_prompt = custom_workflow
+            else:
+                workflow_prompt = build_ltx25_t2v_workflow(
+                    prompt=params["prompt"],
+                    negative_prompt=params["negative_prompt"],
+                    width=params["width"],
+                    height=params["height"],
+                    num_frames=params["num_frames"],
+                    fps=params["fps"],
+                    seed=params["seed"],
+                    steps=params["steps"],
+                    cfg=params["cfg"],
+                    sampler_name=params["sampler_name"],
+                    scheduler=params["scheduler"],
+                    use_distilled_lora=params["use_distilled_lora"],
+                    lora_strength=params["lora_strength"],
+                    models_dir=f"{WORKSPACE_DIR}/ComfyUI/models",
+                )
+
+            # 4. Queue workflow prompt
+            queue_start = time.time()
+            prompt_id = client.queue_prompt(workflow_prompt)
+            queue_duration = time.time() - queue_start
+            logger.info(f"Queued prompt {prompt_id} for job {job_id} in {queue_duration:.2f}s")
+
+            # 5. Track execution to completion
+            def on_progress(val, max_val, node):
+                logger.info(f"[{job_id}] Progress: {val}/{max_val} (Node: {node})")
+
+            gen_start = time.time()
+            history_entry = client.track_execution(
+                prompt_id=prompt_id,
+                timeout_seconds=int(os.getenv("JOB_TIMEOUT_SECONDS", "900")),
+                on_progress=on_progress,
+            )
+            gen_duration = time.time() - gen_start
+            logger.info(f"Generation completed for prompt {prompt_id} in {gen_duration:.2f}s")
+
+            # 6. Extract output files
+            raw_files = client.extract_output_files(history_entry, output_dir=COMFY_OUTPUT_DIR)
+            if not raw_files:
+                raise RuntimeError(
+                    f"ComfyUI completed prompt {prompt_id} but produced no output files. History: {history_entry}"
+                )
+
+            # 7. Process files (S3 upload / base64 / local path)
+            processed_files = []
+            primary_url = None
+
+            for file_info in raw_files:
+                processed = storage.process_output_file(
+                    file_info=file_info,
+                    return_base64=params["return_base64"],
+                    upload_s3=params["upload_s3"],
+                )
+                processed_files.append(processed)
+                if not primary_url and "url" in processed:
+                    primary_url = processed["url"]
+
+            total_duration = time.time() - start_time
+            peak_vram = get_vram_peak_gb()
+
+            response = {
+                "status": "success",
+                "prompt_id": prompt_id,
+                "video_url": primary_url or (processed_files[0]["local_path"] if processed_files else None),
+                "output_files": processed_files,
+                "metrics": {
+                    "total_duration_seconds": round(total_duration, 2),
+                    "queue_duration_seconds": round(queue_duration, 2),
+                    "generation_duration_seconds": round(gen_duration, 2),
+                    "vram_peak_gb": peak_vram,
+                },
+                "params": params,
+            }
+
+            logger.info(f"Job {job_id} succeeded in {total_duration:.2f}s (VRAM peak: {peak_vram} GB)")
+            return response
+
+        except (ComfyUIExecutionError, ComfyUITimeoutError, ValueError, RuntimeError) as exc:
+            total_duration = time.time() - start_time
+            logger.error(f"Job {job_id} failed: {exc}", exc_info=True)
+            return {
+                "status": "failed",
+                "error": str(exc),
+                "error_type": exc.__class__.__name__,
+                "metrics": {
+                    "total_duration_seconds": round(total_duration, 2),
+                    "vram_peak_gb": get_vram_peak_gb(),
+                },
+            }
+        except Exception as exc:
+            total_duration = time.time() - start_time
+            logger.error(f"Job {job_id} unexpected exception: {exc}", exc_info=True)
+            return {
+                "status": "failed",
+                "error": f"Internal error: {str(exc)}",
+                "error_type": exc.__class__.__name__,
+                "metrics": {
+                    "total_duration_seconds": round(total_duration, 2),
+                    "vram_peak_gb": get_vram_peak_gb(),
+                },
+            }
+
+
+if __name__ == "__main__":
+    logger.info("Initializing RunPod Serverless LTX-2.5 Worker...")
+    # Cold start health check verification
+    try:
+        report = full_health_check(workspace_dir=WORKSPACE_DIR, host=COMFY_HOST, port=COMFY_PORT)
+        logger.info(f"Worker Health Report: {report['healthy']}")
+    except Exception as exc:
+        logger.warning(f"Initial health check failed: {exc}")
+
+    logger.info("Starting runpod.serverless loop...")
+    runpod.serverless.start({"handler": handler})

@@ -68,8 +68,17 @@ if [[ ! -d /workspace/ComfyUI ]]; then
     # Set permissions right for directory
     chmod -R 777 /workspace/ComfyUI/user
 else
+    echo "✅ [EXISTING ComfyUI DETECTED] Preserving /workspace/ComfyUI"
+    if [[ -d /ComfyUI/custom_nodes && -d /workspace/ComfyUI/custom_nodes ]]; then
+        echo "ℹ️ Syncing any missing custom nodes to /workspace/ComfyUI/custom_nodes (non-destructive)..."
+        cp -rn /ComfyUI/custom_nodes/* /workspace/ComfyUI/custom_nodes/ 2>/dev/null || true
+    fi
     rm -rf /ComfyUI
 fi
 
+# Ensure essential runtime directories exist
+mkdir -p /workspace/ComfyUI/output /workspace/ComfyUI/input /workspace/ComfyUI/models
+
 # Linking
 ln -s /workspace/ComfyUI /ComfyUI
+

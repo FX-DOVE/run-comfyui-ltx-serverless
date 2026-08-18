@@ -96,8 +96,9 @@ WORKDIR /
 RUN --mount=type=cache,target=/root/.cache/pip \
   python -m pip install --no-cache-dir --root-user-action ignore -c /constraints.txt \
   diffusers psutil pydantic pydantic-settings "descript-audiotools>=0.7.2" "descript-audio-codec" \
-  "rotary-embedding-torch==0.8.9" && \
-  python -c "import rotary_embedding_torch"
+  "rotary-embedding-torch==0.8.9" runpod boto3 websocket-client && \
+  python -c "import rotary_embedding_torch, runpod, boto3, websocket"
+
 
 # Install Dependencies for Cloned Repositories
 WORKDIR /ComfyUI/custom_nodes
@@ -184,12 +185,15 @@ RUN --mount=type=cache,target=/root/.cache/git \
     cp /comfyui-docs/ComfyUI_LTX_resources.md /docs/ComfyUI_LTX_resources.md && \
     rm -rf /comfyui-docs
 
-# Copy Scripts and documentation
+# Copy Scripts, serverless handler, workflows, and documentation
 COPY --chmod=755 start.sh onworkspace/comfyui-on-workspace.sh onworkspace/files-on-workspace.sh onworkspace/test-on-workspace.sh onworkspace/docs-on-workspace.sh / 
+COPY --chmod=755 serverless/ /serverless
+COPY --chmod=644 workflows/ /workflows
 COPY --chmod=664 documentation/README.md /README.md
 COPY --chmod=644 onworkspace/batch.txt /batch.txt
 COPY --chmod=644 test/ /test
 COPY --chmod=644 docs/ /docs
+
 
 # Set Workspace
 WORKDIR /workspace

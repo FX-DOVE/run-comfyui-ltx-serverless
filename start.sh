@@ -72,6 +72,9 @@ else
   echo "⚠️ [NO GPU] No GPU found via nvidia-smi"
 fi
 
+export MODE="${MODE:-interactive}"
+echo "ℹ️ Pod execution mode: ${MODE}"
+
 # Move necessary files to workspace
 if [[ "$HAS_GPU" -eq 1 || "$HAS_GPU_RUNPOD" -eq 1 ]]; then  
 	echo "ℹ️ [Moving necessary files to workspace] enabling Start/Stop/Restart pod without data loss."
@@ -87,21 +90,26 @@ if [[ "$HAS_GPU" -eq 1 || "$HAS_GPU_RUNPOD" -eq 1 ]]; then
 	done
 fi
 
-# Start code-server (HTTP port 9000) 
-if [[ "$HAS_GPU" -eq 1 || "$HAS_GPU_RUNPOD" -eq 1 ]]; then    
-    echo "▶️ Code-Server service starting"
-	
-    if [[ -n "$PASSWORD" ]]; then
-        code-server /workspace --auth password --disable-update-check --disable-telemetry --host 0.0.0.0 --bind-addr 0.0.0.0:9000 &
+# Start code-server (HTTP port 9000) only in interactive mode
+if [[ "$MODE" != "serverless" ]]; then
+    if [[ "$HAS_GPU" -eq 1 || "$HAS_GPU_RUNPOD" -eq 1 ]]; then    
+        echo "▶️ Code-Server service starting"
+        
+        if [[ -n "$PASSWORD" ]]; then
+            code-server /workspace --auth password --disable-update-check --disable-telemetry --host 0.0.0.0 --bind-addr 0.0.0.0:9000 &
+        else
+            echo "⚠️ PASSWORD is not set as an environment. Password file: /root/.config/code-server/config.yaml"
+            code-server /workspace --disable-telemetry --disable-update-check --host 0.0.0.0 --bind-addr 0.0.0.0:9000 &
+        fi
+        
+        echo "🎉 code-server service started"
     else
-        echo "⚠️ PASSWORD is not set as an environment. Password file: /root/.config/code-server/config.yaml"
-        code-server /workspace --disable-telemetry --disable-update-check --host 0.0.0.0 --bind-addr 0.0.0.0:9000 &
+        echo "⚠️ WARNING: No GPU available, Code Server not started to limit memory use"
     fi
-	
-    echo "🎉 code-server service started"
 else
-    echo "⚠️ WARNING: No GPU available, Code Server not started to limit memory use"
+    echo "ℹ️ [MODE=serverless] Skipping code-server to dedicate full resources to inference"
 fi
+
 	
 sleep 2
 
@@ -546,6 +554,12 @@ download_model_HF() {
     fi
     mkdir -p "$target"
 
+    local filename="$(basename "$file")"
+    if [[ -f "$target/$file" || -f "$target/$filename" || -f "/workspace/ComfyUI/models/$dest_dir/$filename" || -f "/workspace/ComfyUI/models/$dest_dir/$file" ]]; then
+        echo "⏭️  [SKIP] Model already exists on volume: $filename in models/$dest_dir"
+        return 0
+    fi
+
     echo "ℹ️ [DOWNLOAD] Fetching $model + $file → $target"
 
     run_hf_download "$model" "$file" --local-dir "$target"
@@ -595,6 +609,15 @@ download_generic_HF() {
 
     local target="/workspace/ComfyUI/$dest_dir"
     mkdir -p "$target"
+
+    if [[ -n "$file" ]]; then
+        local filename="$(basename "$file")"
+        if [[ -f "$target/$file" || -f "$target/$filename" ]]; then
+            echo "⏭️  [SKIP] Generic model already exists on volume: $filename in $dest_dir"
+            return 0
+        fi
+    fi
+
 
     local status="ok"
     local hf_args=()
@@ -1041,6 +1064,12 @@ except Exception as e2:
     print("Failed:", e2)
 PY
 
-# Keep the container running
-echo "ℹ️ End script"
-exec sleep infinity
+# Keep the container running or launch serverless handler
+if [[ "$MODE" == "serverless" ]]; then
+    echo "🚀 [MODE=serverless] Starting RunPod Serverless Handler..."
+    exec python3 -u /serverless/handler.py
+else
+    echo "ℹ️ [MODE=interactive] Keeping container alive for interactive session."
+    exec sleep infinity
+fi
+

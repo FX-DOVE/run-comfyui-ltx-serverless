@@ -1,0 +1,118 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "Gemma-4-12B-it-uncensored-heretic - DeepNeuralNerd -LTX 2.5-ComfyUI-int8convrot.safetensors",
+      "type": "ltxv"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "ltx-2.5-video-vae-conv-bf16.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "lora_name": "ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
+      "strength_model": 1.0,
+      "model": [
+        "1",
+        0
+      ]
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "__PROMPT__",
+      "clip": [
+        "2",
+        0
+      ]
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "__NEGATIVE_PROMPT__",
+      "clip": [
+        "2",
+        0
+      ]
+    }
+  },
+  "7": {
+    "class_type": "EmptyLTXVLatentVideo",
+    "inputs": {
+      "width": 768,
+      "height": 432,
+      "length": 49,
+      "batch_size": 1
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 42,
+      "steps": 20,
+      "cfg": 3.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1.0,
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "5",
+        0
+      ],
+      "negative": [
+        "6",
+        0
+      ],
+      "latent_image": [
+        "7",
+        0
+      ]
+    }
+  },
+  "9": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "10": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "LTX25_T2V",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_output": true,
+      "images": [
+        "9",
+        0
+      ]
+    }
+  }
+}
