@@ -79,6 +79,14 @@ fi
 # Ensure essential runtime directories exist
 mkdir -p /workspace/ComfyUI/output /workspace/ComfyUI/input /workspace/ComfyUI/models
 
+if [[ "$MODE" == "serverless" ]]; then
+    if [[ -d "/workspace/ComfyUI/custom_nodes/ComfyUI-Login" ]]; then
+        echo "ℹ️ [MODE=serverless] Disabling ComfyUI-Login custom node to allow local API access..."
+        mv "/workspace/ComfyUI/custom_nodes/ComfyUI-Login" "/workspace/ComfyUI/custom_nodes/ComfyUI-Login.disabled" 2>/dev/null || true
+    fi
+fi
+
 # Linking
 ln -s /workspace/ComfyUI /ComfyUI
+
 

@@ -189,6 +189,14 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
 	    echo "⚠️ CIVITAI_TOKEN not set – Insert your token manually in ComfyUI-Lora-Manager"
 	fi
 	
+    if [[ "$MODE" == "serverless" ]]; then
+        # Disable ComfyUI-Login node in serverless mode so localhost API calls are not blocked by HTTP 401
+        if [[ -d "/workspace/ComfyUI/custom_nodes/ComfyUI-Login" ]]; then
+            echo "ℹ️ [MODE=serverless] Disabling ComfyUI-Login to allow headless local API requests..."
+            mv "/workspace/ComfyUI/custom_nodes/ComfyUI-Login" "/workspace/ComfyUI/custom_nodes/ComfyUI-Login.disabled" 2>/dev/null || true
+        fi
+    fi
+
    	echo "▶️ ComfyUI service starting (CUDA available)"
 	    
     python3 /workspace/ComfyUI/main.py ${COMFYUI_EXTRA_ARGUMENTS:---listen --enable-manager --preview-method latent2rgb} &
