@@ -28,9 +28,19 @@ class StorageManager:
         presigned_ttl: int = 86400,
     ):
         self.backend = (backend or os.getenv("OUTPUT_BACKEND", "local")).lower()
-        self.bucket_name = bucket_name or os.getenv("S3_BUCKET_NAME") or os.getenv("BUCKET_NAME")
+        self.bucket_name = (
+            bucket_name
+            or os.getenv("S3_BUCKET_NAME")
+            or os.getenv("S3_BUCKET")
+            or os.getenv("BUCKET_NAME")
+        )
         self.endpoint_url = endpoint_url or os.getenv("S3_ENDPOINT_URL") or os.getenv("ENDPOINT_URL")
-        self.region_name = region_name or os.getenv("S3_REGION_NAME") or os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+        self.region_name = (
+            region_name
+            or os.getenv("S3_REGION_NAME")
+            or os.getenv("S3_REGION")
+            or os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+        )
         self.access_key_id = (
             access_key_id
             or os.getenv("S3_ACCESS_KEY_ID")
@@ -113,7 +123,7 @@ class StorageManager:
             "local_path": path_str,
         }
 
-        should_upload = upload_s3 if upload_s3 is not None else (self.backend == "s3")
+        should_upload = upload_s3 if upload_s3 is not None else (self.backend == "s3" or bool(self.bucket_name and self.access_key_id))
 
         if should_upload and path.exists():
             try:
