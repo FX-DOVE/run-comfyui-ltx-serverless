@@ -197,6 +197,118 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
         fi
     fi
 
+    echo "ℹ️ Discovering and linking model files across persistent storage..."
+    python3 - <<'PY_SETUP'
+import os
+import shutil
+from pathlib import Path
+
+candidate_bases = [
+    Path("/runpod-volume/ComfyUI/models"),
+    Path("/runpod-volume/models"),
+    Path("/workspace/models"),
+    Path("/runpod-volume"),
+    Path("/workspace"),
+]
+
+target_base = Path("/workspace/ComfyUI/models")
+target_base.mkdir(parents=True, exist_ok=True)
+
+for sub in [
+    "diffusion_models", "text_encoders", "vae", "loras",
+    "model_patches", "latent_upscale_models", "clip", "unet", "checkpoints"
+]:
+    (target_base / sub).mkdir(parents=True, exist_ok=True)
+
+# Remove put_* placeholders from target
+for p in target_base.rglob("put_*"):
+    try:
+        if p.is_file():
+            p.unlink()
+    except Exception:
+        pass
+
+# Category routing rules based on filename matching
+rules = [
+    (["transformer", "dev-transformer", "diffusion"], ["diffusion_models", "unet"]),
+    (["gemma", "t5", "clip", "text_encoder"], ["text_encoders", "clip"]),
+    (["vae"], ["vae"]),
+    (["lora"], ["loras"]),
+    (["duration-head", "patch"], ["model_patches"]),
+    (["upscaler", "latent-spatial", "latent-temporal"], ["latent_upscale_models"]),
+]
+
+# Find all safetensors/ckpt/pt/gguf files
+for base in candidate_bases:
+    if not base.exists():
+        continue
+    for ext in ("*.safetensors", "*.ckpt", "*.pt", "*.gguf", "*.bin"):
+        for f in base.rglob(ext):
+            if f.is_file() and not f.name.startswith("put_") and not f.name.startswith("."):
+                name_lower = f.name.lower()
+                for keywords, dest_cats in rules:
+                    if any(kw in name_lower for kw in keywords):
+                        for cat in dest_cats:
+                            dest = target_base / cat / f.name
+                            if not dest.exists():
+                                try:
+                                    dest.symlink_to(f)
+                                    print(f"🔗 Linked model {f.name} -> {cat}/")
+                                except Exception as e:
+                                    print(f"⚠️ Could not symlink {f.name} to {cat}: {e}")
+                        break
+
+# Generate extra_model_paths.yaml
+extra_paths_yaml = """
+runpod_volume:
+    base_path: /runpod-volume
+    checkpoints: ComfyUI/models/checkpoints
+    diffusion_models: ComfyUI/models/diffusion_models
+    unet: ComfyUI/models/unet
+    clip: ComfyUI/models/clip
+    text_encoders: ComfyUI/models/text_encoders
+    vae: ComfyUI/models/vae
+    loras: ComfyUI/models/loras
+    upscale_models: ComfyUI/models/upscale_models
+    latent_upscale_models: ComfyUI/models/latent_upscale_models
+    model_patches: ComfyUI/models/model_patches
+
+runpod_volume_direct:
+    base_path: /runpod-volume/models
+    checkpoints: checkpoints
+    diffusion_models: diffusion_models
+    unet: unet
+    clip: clip
+    text_encoders: text_encoders
+    vae: vae
+    loras: loras
+    upscale_models: upscale_models
+    latent_upscale_models: latent_upscale_models
+    model_patches: model_patches
+
+workspace_direct:
+    base_path: /workspace/models
+    checkpoints: checkpoints
+    diffusion_models: diffusion_models
+    unet: unet
+    clip: clip
+    text_encoders: text_encoders
+    vae: vae
+    loras: loras
+    upscale_models: upscale_models
+    latent_upscale_models: latent_upscale_models
+    model_patches: model_patches
+"""
+
+for yaml_path in [Path("/workspace/ComfyUI/extra_model_paths.yaml"), Path("/ComfyUI/extra_model_paths.yaml")]:
+    try:
+        yaml_path.parent.mkdir(parents=True, exist_ok=True)
+        yaml_path.write_text(extra_paths_yaml.strip() + "\n")
+        print(f"✅ Created {yaml_path}")
+    except Exception as e:
+        print(f"⚠️ Could not write {yaml_path}: {e}")
+PY_SETUP
+
    	echo "▶️ ComfyUI service starting (CUDA available)"
 	    
     python3 /workspace/ComfyUI/main.py ${COMFYUI_EXTRA_ARGUMENTS:---listen --enable-manager --preview-method latent2rgb} &

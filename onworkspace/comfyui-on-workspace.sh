@@ -63,10 +63,13 @@ move_with_progress() {
 # Ensure we have /workspace in all scenarios
 mkdir -p /workspace
 
-if [[ ! -d /workspace/ComfyUI ]]; then
+if [[ -d /runpod-volume/ComfyUI && ! -d /workspace/ComfyUI ]]; then
+    echo "ℹ️ [RUNPOD-VOLUME DETECTED] Linking /runpod-volume/ComfyUI to /workspace/ComfyUI"
+    ln -s /runpod-volume/ComfyUI /workspace/ComfyUI
+elif [[ ! -d /workspace/ComfyUI ]]; then
     move_with_progress /ComfyUI /workspace/ComfyUI || exit 1
     # Set permissions right for directory
-    chmod -R 777 /workspace/ComfyUI/user
+    chmod -R 777 /workspace/ComfyUI/user 2>/dev/null || true
 else
     echo "✅ [EXISTING ComfyUI DETECTED] Preserving /workspace/ComfyUI"
     if [[ -d /ComfyUI/custom_nodes && -d /workspace/ComfyUI/custom_nodes ]]; then
@@ -78,6 +81,18 @@ fi
 
 # Ensure essential runtime directories exist
 mkdir -p /workspace/ComfyUI/output /workspace/ComfyUI/input /workspace/ComfyUI/models
+mkdir -p /workspace/ComfyUI/models/diffusion_models \
+         /workspace/ComfyUI/models/text_encoders \
+         /workspace/ComfyUI/models/vae \
+         /workspace/ComfyUI/models/loras \
+         /workspace/ComfyUI/models/model_patches \
+         /workspace/ComfyUI/models/latent_upscale_models \
+         /workspace/ComfyUI/models/clip \
+         /workspace/ComfyUI/models/unet \
+         /workspace/ComfyUI/models/checkpoints
+
+# Remove dummy placeholder files (put_*) so ComfyUI doesn't treat them as valid models
+find /workspace/ComfyUI/models -type f -name "put_*" -delete 2>/dev/null || true
 
 if [[ "$MODE" == "serverless" ]]; then
     if [[ -d "/workspace/ComfyUI/custom_nodes/ComfyUI-Login" ]]; then
@@ -86,7 +101,9 @@ if [[ "$MODE" == "serverless" ]]; then
     fi
 fi
 
-# Linking
-ln -s /workspace/ComfyUI /ComfyUI
+# Linking root /ComfyUI
+if [[ ! -e /ComfyUI ]]; then
+    ln -s /workspace/ComfyUI /ComfyUI
+fi
 
 

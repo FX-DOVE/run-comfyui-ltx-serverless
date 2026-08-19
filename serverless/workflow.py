@@ -23,26 +23,59 @@ DEFAULT_LORA = "ltx-2.5-22b-distilled-lora-450-bf16.safetensors"
 
 
 def find_existing_model_name(category: str, preferred: str, models_dir: str = "/workspace/ComfyUI/models") -> str:
-    """Check if the preferred model exists, or pick the best available in the category directory."""
-    cat_dir = Path(models_dir) / category
-    if not cat_dir.exists():
-        return preferred
+    """
+    Check if the preferred model exists, or pick the best available in the category directory.
+    Searches across all possible volume mount paths and category aliases, ignoring dummy placeholder files.
+    """
+    category_aliases = {
+        "diffusion_models": ["diffusion_models", "unet", "checkpoints"],
+        "text_encoders": ["text_encoders", "clip"],
+        "vae": ["vae"],
+        "loras": ["loras", "lora"],
+        "model_patches": ["model_patches"],
+        "latent_upscale_models": ["latent_upscale_models"],
+    }
+    
+    aliases = category_aliases.get(category, [category])
+    
+    # Candidate base directories
+    base_dirs = [
+        Path(models_dir),
+        Path("/workspace/ComfyUI/models"),
+        Path("/runpod-volume/ComfyUI/models"),
+        Path("/workspace/models"),
+        Path("/runpod-volume/models"),
+        Path("/ComfyUI/models"),
+    ]
+    
+    # 1. Check if preferred exists in any candidate location
+    for base in base_dirs:
+        for alias in aliases:
+            p = base / alias / preferred
+            if p.exists() and p.is_file() and not p.name.startswith("put_"):
+                return preferred
 
-    preferred_path = cat_dir / preferred
-    if preferred_path.exists():
-        return preferred
+    # 2. Search for valid model files (*.safetensors, *.ckpt, *.pt, *.bin)
+    candidate_files = []
+    for base in base_dirs:
+        for alias in aliases:
+            cat_dir = base / alias
+            if cat_dir.exists() and cat_dir.is_dir():
+                for f in cat_dir.iterdir():
+                    if (
+                        f.is_file()
+                        and not f.name.startswith("put_")
+                        and not f.name.startswith(".")
+                        and f.suffix.lower() in (".safetensors", ".ckpt", ".pt", ".bin", ".gguf")
+                    ):
+                        candidate_files.append(f.name)
 
-    # Search for matching files
-    files = [f.name for f in cat_dir.glob("*.safetensors")]
-    if not files:
-        files = [f.name for f in cat_dir.iterdir() if f.is_file()]
-
-    if files:
-        # Sort to prioritize dev / int8 / bf16
-        for f in files:
+    if candidate_files:
+        # Prioritize files with matching keywords
+        for f in candidate_files:
             if "ltx" in f.lower() or "gemma" in f.lower():
                 return f
-        return files[0]
+        return candidate_files[0]
 
     return preferred
 
@@ -186,9 +219,10 @@ def build_ltx25_t2v_workflow(
             "loop_count": 0,
             "filename_prefix": "LTX25_T2V",
             "format": "video/h264-mp4",
+            "pingpong": False,
+            "save_output": True,
             "pix_fmt": "yuv420p",
-            "crf": 19,
-            "save_output": True
+            "crf": 19
         }
     }
 

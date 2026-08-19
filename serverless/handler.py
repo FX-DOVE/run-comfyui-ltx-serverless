@@ -19,7 +19,14 @@ import runpod
 from comfy_client import ComfyClient, ComfyUIExecutionError, ComfyUITimeoutError
 from health import full_health_check
 from storage import StorageManager
-from workflow import build_ltx25_t2v_workflow
+from workflow import (
+    DEFAULT_DIFFUSION_MODEL,
+    DEFAULT_LORA,
+    DEFAULT_TEXT_ENCODER,
+    DEFAULT_VAE,
+    build_ltx25_t2v_workflow,
+    find_existing_model_name,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +45,66 @@ COMFY_OUTPUT_DIR = os.getenv("COMFYUI_OUTPUT_DIR", f"{WORKSPACE_DIR}/ComfyUI/out
 
 client = ComfyClient(host=COMFY_HOST, port=COMFY_PORT)
 storage = StorageManager()
+
+
+def sanitize_workflow_prompt(workflow: Dict[str, Any], models_dir: str = f"{WORKSPACE_DIR}/ComfyUI/models") -> Dict[str, Any]:
+    """
+    Sanitizes workflow graph to prevent ComfyUI validation errors:
+    1. Ensures required VHS_VideoCombine parameters (e.g., pingpong) are present.
+    2. Replaces any dummy placeholder filenames (e.g. 'put_diffusion_model_files_here') with real model filenames found on disk.
+    """
+    import copy
+    wf = copy.deepcopy(workflow)
+
+    for node_id, node_data in wf.items():
+        if not isinstance(node_data, dict):
+            continue
+
+        class_type = node_data.get("class_type", "")
+        inputs = node_data.get("inputs", {})
+        if not isinstance(inputs, dict):
+            continue
+
+        # 1. Fix VHS_VideoCombine missing required inputs
+        if class_type == "VHS_VideoCombine":
+            if "pingpong" not in inputs:
+                inputs["pingpong"] = False
+            if "save_output" not in inputs:
+                inputs["save_output"] = True
+
+        # 2. Fix UNETLoader placeholder
+        elif class_type in ("UNETLoader", "UNETLoaderGGUF"):
+            unet_name = str(inputs.get("unet_name", ""))
+            if not unet_name or unet_name.startswith("put_") or unet_name == "undefined":
+                resolved = find_existing_model_name("diffusion_models", DEFAULT_DIFFUSION_MODEL, models_dir)
+                logger.info(f"Resolved placeholder unet_name '{unet_name}' -> '{resolved}'")
+                inputs["unet_name"] = resolved
+
+        # 3. Fix CLIPLoader placeholder
+        elif class_type in ("CLIPLoader", "CLIPLoaderGGUF"):
+            clip_name = str(inputs.get("clip_name", ""))
+            if not clip_name or clip_name.startswith("put_") or clip_name == "undefined":
+                resolved = find_existing_model_name("text_encoders", DEFAULT_TEXT_ENCODER, models_dir)
+                logger.info(f"Resolved placeholder clip_name '{clip_name}' -> '{resolved}'")
+                inputs["clip_name"] = resolved
+
+        # 4. Fix VAELoader placeholder
+        elif class_type == "VAELoader":
+            vae_name = str(inputs.get("vae_name", ""))
+            if not vae_name or vae_name.startswith("put_") or vae_name == "undefined":
+                resolved = find_existing_model_name("vae", DEFAULT_VAE, models_dir)
+                logger.info(f"Resolved placeholder vae_name '{vae_name}' -> '{resolved}'")
+                inputs["vae_name"] = resolved
+
+        # 5. Fix LoraLoader placeholder
+        elif class_type in ("LoraLoaderModelOnly", "LoraLoader"):
+            lora_name = str(inputs.get("lora_name", ""))
+            if not lora_name or lora_name.startswith("put_") or lora_name == "undefined":
+                resolved = find_existing_model_name("loras", DEFAULT_LORA, models_dir)
+                logger.info(f"Resolved placeholder lora_name '{lora_name}' -> '{resolved}'")
+                inputs["lora_name"] = resolved
+
+    return wf
 
 
 def get_vram_peak_gb() -> float:
@@ -163,6 +230,11 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
                     lora_strength=params["lora_strength"],
                     models_dir=f"{WORKSPACE_DIR}/ComfyUI/models",
                 )
+
+            # 3.5 Sanitize workflow prompt to ensure all required parameters (e.g. pingpong) and model paths are valid
+            workflow_prompt = sanitize_workflow_prompt(
+                workflow_prompt, models_dir=f"{WORKSPACE_DIR}/ComfyUI/models"
+            )
 
             # 4. Queue workflow prompt
             queue_start = time.time()

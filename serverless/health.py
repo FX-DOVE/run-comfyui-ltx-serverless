@@ -88,47 +88,102 @@ def check_gpu() -> dict:
     return gpu_info
 
 
+CATEGORY_ALIASES = {
+    "diffusion_models": ["diffusion_models", "unet", "checkpoints"],
+    "text_encoders": ["text_encoders", "clip"],
+    "vae": ["vae"],
+    "loras": ["loras", "lora"],
+    "model_patches": ["model_patches"],
+    "latent_upscale_models": ["latent_upscale_models"],
+}
+
+CANDIDATE_MODEL_DIRS = [
+    "/workspace/ComfyUI/models",
+    "/runpod-volume/ComfyUI/models",
+    "/workspace/models",
+    "/runpod-volume/models",
+    "/ComfyUI/models",
+]
+
+
 def check_workspace(workspace_dir: str = "/workspace") -> dict:
     ws_path = Path(workspace_dir)
     comfy_path = ws_path / "ComfyUI"
-    models_path = comfy_path / "models"
+    
+    # Check if models exist in any known directory
+    has_models_dir = False
+    for candidate in CANDIDATE_MODEL_DIRS:
+        if Path(candidate).exists() and Path(candidate).is_dir():
+            has_models_dir = True
+            break
 
     return {
         "workspace_exists": ws_path.exists(),
         "workspace_is_dir": ws_path.is_dir(),
-        "comfyui_exists": comfy_path.exists(),
-        "comfyui_models_dir": models_path.exists(),
+        "comfyui_exists": comfy_path.exists() or Path("/ComfyUI").exists(),
+        "comfyui_models_dir": has_models_dir,
     }
 
 
 def check_models(models_dir: str = "/workspace/ComfyUI/models") -> dict:
-    base = Path(models_dir)
     results = {"required": {}, "optional": {}, "all_required_present": True}
 
-    if not base.exists():
+    base_paths = [Path(models_dir)] + [Path(p) for p in CANDIDATE_MODEL_DIRS if Path(p) != Path(models_dir)]
+    valid_base_paths = [p for p in base_paths if p.exists() and p.is_dir()]
+
+    if not valid_base_paths:
         results["all_required_present"] = False
-        results["error"] = f"Models base directory not found: {models_dir}"
+        results["error"] = f"No valid model base directories found across candidates."
         return results
 
     for req in REQUIRED_MODELS:
         cat = req["category"]
         primary = req["primary"]
         alts = req.get("alternatives", [])
+        aliases = CATEGORY_ALIASES.get(cat, [cat])
         found_file = None
         found_size_bytes = 0
 
-        # Check primary
-        p_path = base / cat / primary
-        if p_path.exists() and p_path.is_file():
-            found_file = primary
-            found_size_bytes = p_path.stat().st_size
-        else:
-            # Check alternatives
+        # Search primary across base paths and aliases
+        for base in valid_base_paths:
+            for alias in aliases:
+                p_path = base / alias / primary
+                if p_path.exists() and p_path.is_file() and not p_path.name.startswith("put_"):
+                    found_file = primary
+                    found_size_bytes = p_path.stat().st_size
+                    break
+            if found_file:
+                break
+
+        # Search alternatives if primary not found
+        if not found_file:
             for alt in alts:
-                alt_path = base / cat / alt
-                if alt_path.exists() and alt_path.is_file():
-                    found_file = alt
-                    found_size_bytes = alt_path.stat().st_size
+                for base in valid_base_paths:
+                    for alias in aliases:
+                        alt_path = base / alias / alt
+                        if alt_path.exists() and alt_path.is_file() and not alt_path.name.startswith("put_"):
+                            found_file = alt
+                            found_size_bytes = alt_path.stat().st_size
+                            break
+                    if found_file:
+                        break
+                if found_file:
+                    break
+
+        # Check for any valid safetensors fallback
+        if not found_file:
+            for base in valid_base_paths:
+                for alias in aliases:
+                    cat_dir = base / alias
+                    if cat_dir.exists() and cat_dir.is_dir():
+                        for f in cat_dir.glob("*.safetensors"):
+                            if not f.name.startswith("put_"):
+                                found_file = f.name
+                                found_size_bytes = f.stat().st_size
+                                break
+                    if found_file:
+                        break
+                if found_file:
                     break
 
         is_ok = found_file is not None
@@ -145,9 +200,20 @@ def check_models(models_dir: str = "/workspace/ComfyUI/models") -> dict:
     for opt in OPTIONAL_MODELS:
         cat = opt["category"]
         fname = opt["filename"]
-        opt_path = base / cat / fname
-        present = opt_path.exists() and opt_path.is_file()
-        size_mb = round(opt_path.stat().st_size / (1024**2), 2) if present else 0.0
+        aliases = CATEGORY_ALIASES.get(cat, [cat])
+        present = False
+        size_mb = 0.0
+
+        for base in valid_base_paths:
+            for alias in aliases:
+                opt_path = base / alias / fname
+                if opt_path.exists() and opt_path.is_file() and not opt_path.name.startswith("put_"):
+                    present = True
+                    size_mb = round(opt_path.stat().st_size / (1024**2), 2)
+                    break
+            if present:
+                break
+
         results["optional"][f"{cat}/{fname}"] = {
             "present": present,
             "size_mb": size_mb,
