@@ -191,10 +191,12 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
 	
     if [[ "$MODE" == "serverless" ]]; then
         # Disable ComfyUI-Login node in serverless mode so localhost API calls are not blocked by HTTP 401
-        if [[ -d "/workspace/ComfyUI/custom_nodes/ComfyUI-Login" ]]; then
-            echo "ℹ️ [MODE=serverless] Disabling ComfyUI-Login to allow headless local API requests..."
-            mv "/workspace/ComfyUI/custom_nodes/ComfyUI-Login" "/workspace/ComfyUI/custom_nodes/ComfyUI-Login.disabled" 2>/dev/null || true
-        fi
+        for login_dir in /workspace/ComfyUI/custom_nodes/ComfyUI-Login /runpod-volume/ComfyUI/custom_nodes/ComfyUI-Login /ComfyUI/custom_nodes/ComfyUI-Login; do
+            if [[ -d "$login_dir" ]]; then
+                echo "ℹ️ [MODE=serverless] Disabling ComfyUI-Login at $login_dir..."
+                mv "$login_dir" "${login_dir}.disabled" 2>/dev/null || true
+            fi
+        done
     fi
 
     echo "ℹ️ Discovering and linking model files across persistent storage..."

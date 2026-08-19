@@ -50,12 +50,13 @@ class ComfyClient:
         """Wait until ComfyUI HTTP server is responsive."""
         start_time = time.time()
         while time.time() - start_time < timeout_seconds:
-            try:
-                resp = requests.get(f"{self.base_url}/system_stats", timeout=2)
-                if resp.status_code == 200:
-                    return True
-            except Exception:
-                pass
+            for ep in ("/system_stats", "/prompt", "/history", ""):
+                try:
+                    resp = requests.get(f"{self.base_url}{ep}", timeout=2)
+                    if resp.status_code in (200, 302, 307):
+                        return True
+                except Exception:
+                    pass
             time.sleep(poll_interval)
         return False
 

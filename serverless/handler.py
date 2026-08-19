@@ -184,6 +184,42 @@ def validate_and_parse_input(job_input: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def ensure_comfyui_running(timeout_seconds: int = 90) -> bool:
+    """Ensure ComfyUI process is running and responsive on HTTP API."""
+    if client.is_ready(timeout_seconds=2):
+        return True
+
+    logger.info("ComfyUI not immediately responsive, checking/spawning process...")
+    import subprocess
+    import psutil
+
+    comfy_entry = "/workspace/ComfyUI/main.py" if os.path.exists("/workspace/ComfyUI/main.py") else "/ComfyUI/main.py"
+    cmd = [
+        sys.executable,
+        comfy_entry,
+        "--listen",
+        "--enable-manager",
+        "--preview-method",
+        "latent2rgb"
+    ]
+
+    found = False
+    for p in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            cmdline = p.info.get('cmdline') or []
+            if any('main.py' in str(c) for c in cmdline):
+                found = True
+                break
+        except Exception:
+            pass
+
+    if not found and os.path.exists(comfy_entry):
+        logger.info(f"Spawning ComfyUI process: {' '.join(cmd)}")
+        subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    return client.is_ready(timeout_seconds=timeout_seconds, poll_interval=2.0)
+
+
 def handler(job: Dict[str, Any]) -> Dict[str, Any]:
     """RunPod Serverless Job Handler."""
     job_id = job.get("id", "local_job")
@@ -204,9 +240,9 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
             # 1. Input parsing
             params = validate_and_parse_input(job_input)
 
-            # 2. Check ComfyUI server readiness
-            if not client.is_ready(timeout_seconds=10):
-                raise RuntimeError("ComfyUI server is not responding at 127.0.0.1:8188")
+            # 2. Check ComfyUI server readiness (watchdog + generous 90s cold start allowance)
+            if not ensure_comfyui_running(timeout_seconds=90):
+                raise RuntimeError("ComfyUI server is not responding at 127.0.0.1:8188 after 90s")
 
             # 3. Build workflow graph
             custom_workflow = job_input.get("workflow")
