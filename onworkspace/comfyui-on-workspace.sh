@@ -64,7 +64,13 @@ move_with_progress() {
 mkdir -p /workspace
 
 if [[ -d /runpod-volume/ComfyUI && ! -d /workspace/ComfyUI ]]; then
-    echo "ℹ️ [RUNPOD-VOLUME DETECTED] Linking /runpod-volume/ComfyUI to /workspace/ComfyUI"
+    echo "ℹ️ [RUNPOD-VOLUME DETECTED] Found /runpod-volume/ComfyUI"
+    # Ensure main.py and core ComfyUI files exist in /runpod-volume/ComfyUI
+    if [[ ! -f /runpod-volume/ComfyUI/main.py && -d /ComfyUI ]]; then
+        echo "ℹ️ Synchronizing container ComfyUI application files into /runpod-volume/ComfyUI..."
+        cp -rn /ComfyUI/* /runpod-volume/ComfyUI/ 2>/dev/null || true
+    fi
+    echo "ℹ️ Linking /runpod-volume/ComfyUI to /workspace/ComfyUI"
     ln -s /runpod-volume/ComfyUI /workspace/ComfyUI
 elif [[ ! -d /workspace/ComfyUI ]]; then
     move_with_progress /ComfyUI /workspace/ComfyUI || exit 1
@@ -72,6 +78,10 @@ elif [[ ! -d /workspace/ComfyUI ]]; then
     chmod -R 777 /workspace/ComfyUI/user 2>/dev/null || true
 else
     echo "✅ [EXISTING ComfyUI DETECTED] Preserving /workspace/ComfyUI"
+    if [[ ! -f /workspace/ComfyUI/main.py && -d /ComfyUI ]]; then
+        echo "ℹ️ Restoring missing ComfyUI main application files into /workspace/ComfyUI..."
+        cp -rn /ComfyUI/* /workspace/ComfyUI/ 2>/dev/null || true
+    fi
     if [[ -d /ComfyUI/custom_nodes && -d /workspace/ComfyUI/custom_nodes ]]; then
         echo "ℹ️ Syncing any missing custom nodes to /workspace/ComfyUI/custom_nodes (non-destructive)..."
         cp -rn /ComfyUI/custom_nodes/* /workspace/ComfyUI/custom_nodes/ 2>/dev/null || true

@@ -13,4 +13,5 @@ else
 fi
 
 # Linking
+rm -rf /test
 ln -s /workspace/test /test

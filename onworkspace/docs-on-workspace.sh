@@ -13,4 +13,5 @@ else
 fi
 
 # Linking
+rm -rf /docs
 ln -s /workspace/docs /docs

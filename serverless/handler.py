@@ -228,7 +228,7 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"Received job {job_id}")
 
     # Support explicit health check request
-    if job_input.get("health_check"):
+    if job_input.get("health_check") or job_input.get("action") in ("health", "health_check", "status"):
         report = full_health_check(workspace_dir=WORKSPACE_DIR, host=COMFY_HOST, port=COMFY_PORT)
         return {"status": "ok" if report["healthy"] else "degraded", "health": report}
 

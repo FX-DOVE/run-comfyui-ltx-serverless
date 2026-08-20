@@ -312,8 +312,20 @@ for yaml_path in [Path("/workspace/ComfyUI/extra_model_paths.yaml"), Path("/Comf
 PY_SETUP
 
    	echo "▶️ ComfyUI service starting (CUDA available)"
-	    
-    python3 /workspace/ComfyUI/main.py ${COMFYUI_EXTRA_ARGUMENTS:---listen --enable-manager --preview-method latent2rgb} &
+	
+    COMFY_MAIN=""
+    if [[ -f /workspace/ComfyUI/main.py ]]; then
+        COMFY_MAIN="/workspace/ComfyUI/main.py"
+    elif [[ -f /ComfyUI/main.py ]]; then
+        COMFY_MAIN="/ComfyUI/main.py"
+    fi
+
+    if [[ -n "$COMFY_MAIN" ]]; then
+        echo "ℹ️ Executing ComfyUI from $COMFY_MAIN"
+        python3 "$COMFY_MAIN" ${COMFYUI_EXTRA_ARGUMENTS:---listen --enable-manager --preview-method latent2rgb} &
+    else
+        echo "❌ CRITICAL: main.py not found in /workspace/ComfyUI or /ComfyUI!"
+    fi
 
     # Wait until ComfyUI is ready
     MAX_TRIES="${COMFYUI_START_MAX_TRIES:-60}"
