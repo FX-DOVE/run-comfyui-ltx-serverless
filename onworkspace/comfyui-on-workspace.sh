@@ -65,10 +65,28 @@ mkdir -p /workspace
 
 if [[ -d /runpod-volume/ComfyUI && ! -d /workspace/ComfyUI ]]; then
     echo "ℹ️ [RUNPOD-VOLUME DETECTED] Found /runpod-volume/ComfyUI"
-    # Ensure main.py and core ComfyUI files exist in /runpod-volume/ComfyUI
-    if [[ ! -f /runpod-volume/ComfyUI/main.py && -d /ComfyUI ]]; then
+    # Always ensure core ComfyUI application components exist in /runpod-volume/ComfyUI
+    if [[ -d /ComfyUI ]]; then
         echo "ℹ️ Synchronizing container ComfyUI application files into /runpod-volume/ComfyUI..."
-        cp -rn /ComfyUI/* /runpod-volume/ComfyUI/ 2>/dev/null || true
+        for item in /ComfyUI/*; do
+            [ -e "$item" ] || continue
+            base_item=$(basename "$item")
+            if [[ "$base_item" != "models" ]]; then
+                cp -rn "$item" /runpod-volume/ComfyUI/ 2>/dev/null || true
+            fi
+        done
+        # Ensure critical comfy and comfy_extras packages exist
+        if [[ ! -d /runpod-volume/ComfyUI/comfy || ! -f /runpod-volume/ComfyUI/comfy/options.py ]]; then
+            echo "ℹ️ Copying comfy Python package into /runpod-volume/ComfyUI..."
+            cp -r /ComfyUI/comfy /runpod-volume/ComfyUI/ 2>/dev/null || true
+        fi
+        if [[ ! -d /runpod-volume/ComfyUI/comfy_extras ]]; then
+            echo "ℹ️ Copying comfy_extras Python package into /runpod-volume/ComfyUI..."
+            cp -r /ComfyUI/comfy_extras /runpod-volume/ComfyUI/ 2>/dev/null || true
+        fi
+        if [[ -d /ComfyUI/custom_nodes && -d /runpod-volume/ComfyUI/custom_nodes ]]; then
+            cp -rn /ComfyUI/custom_nodes/* /runpod-volume/ComfyUI/custom_nodes/ 2>/dev/null || true
+        fi
     fi
     echo "ℹ️ Linking /runpod-volume/ComfyUI to /workspace/ComfyUI"
     ln -s /runpod-volume/ComfyUI /workspace/ComfyUI
@@ -78,15 +96,26 @@ elif [[ ! -d /workspace/ComfyUI ]]; then
     chmod -R 777 /workspace/ComfyUI/user 2>/dev/null || true
 else
     echo "✅ [EXISTING ComfyUI DETECTED] Preserving /workspace/ComfyUI"
-    if [[ ! -f /workspace/ComfyUI/main.py && -d /ComfyUI ]]; then
+    if [[ -d /ComfyUI ]]; then
         echo "ℹ️ Restoring missing ComfyUI main application files into /workspace/ComfyUI..."
-        cp -rn /ComfyUI/* /workspace/ComfyUI/ 2>/dev/null || true
+        for item in /ComfyUI/*; do
+            [ -e "$item" ] || continue
+            base_item=$(basename "$item")
+            if [[ "$base_item" != "models" ]]; then
+                cp -rn "$item" /workspace/ComfyUI/ 2>/dev/null || true
+            fi
+        done
+        if [[ ! -d /workspace/ComfyUI/comfy || ! -f /workspace/ComfyUI/comfy/options.py ]]; then
+            cp -r /ComfyUI/comfy /workspace/ComfyUI/ 2>/dev/null || true
+        fi
+        if [[ ! -d /workspace/ComfyUI/comfy_extras ]]; then
+            cp -r /ComfyUI/comfy_extras /workspace/ComfyUI/ 2>/dev/null || true
+        fi
+        if [[ -d /ComfyUI/custom_nodes && -d /workspace/ComfyUI/custom_nodes ]]; then
+            echo "ℹ️ Syncing any missing custom nodes to /workspace/ComfyUI/custom_nodes (non-destructive)..."
+            cp -rn /ComfyUI/custom_nodes/* /workspace/ComfyUI/custom_nodes/ 2>/dev/null || true
+        fi
     fi
-    if [[ -d /ComfyUI/custom_nodes && -d /workspace/ComfyUI/custom_nodes ]]; then
-        echo "ℹ️ Syncing any missing custom nodes to /workspace/ComfyUI/custom_nodes (non-destructive)..."
-        cp -rn /ComfyUI/custom_nodes/* /workspace/ComfyUI/custom_nodes/ 2>/dev/null || true
-    fi
-    rm -rf /ComfyUI
 fi
 
 # Ensure essential runtime directories exist

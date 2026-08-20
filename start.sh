@@ -311,13 +311,34 @@ for yaml_path in [Path("/workspace/ComfyUI/extra_model_paths.yaml"), Path("/Comf
         print(f"⚠️ Could not write {yaml_path}: {e}")
 PY_SETUP
 
+    # Ensure PYTHONPATH includes /workspace/ComfyUI and /ComfyUI
+    export PYTHONPATH="/workspace/ComfyUI:/ComfyUI:${PYTHONPATH:-}"
+
+    # Pre-flight check: ensure comfy and comfy_extras Python packages exist
+    if [[ -d /ComfyUI ]]; then
+        if [[ -d /workspace/ComfyUI && (! -d /workspace/ComfyUI/comfy || ! -f /workspace/ComfyUI/comfy/options.py) ]]; then
+            echo "ℹ️ [PREFLIGHT] Copying comfy package from /ComfyUI into /workspace/ComfyUI..."
+            cp -r /ComfyUI/comfy /workspace/ComfyUI/ 2>/dev/null || true
+        fi
+        if [[ -d /workspace/ComfyUI && ! -d /workspace/ComfyUI/comfy_extras ]]; then
+            echo "ℹ️ [PREFLIGHT] Copying comfy_extras package from /ComfyUI into /workspace/ComfyUI..."
+            cp -r /ComfyUI/comfy_extras /workspace/ComfyUI/ 2>/dev/null || true
+        fi
+        if [[ -d /workspace/ComfyUI && ! -f /workspace/ComfyUI/main.py ]]; then
+            echo "ℹ️ [PREFLIGHT] Restoring main.py from /ComfyUI into /workspace/ComfyUI..."
+            cp /ComfyUI/main.py /workspace/ComfyUI/ 2>/dev/null || true
+        fi
+    fi
+
    	echo "▶️ ComfyUI service starting (CUDA available)"
 	
     COMFY_MAIN=""
-    if [[ -f /workspace/ComfyUI/main.py ]]; then
+    if [[ -f /workspace/ComfyUI/main.py && -f /workspace/ComfyUI/comfy/options.py ]]; then
         COMFY_MAIN="/workspace/ComfyUI/main.py"
     elif [[ -f /ComfyUI/main.py ]]; then
         COMFY_MAIN="/ComfyUI/main.py"
+    elif [[ -f /workspace/ComfyUI/main.py ]]; then
+        COMFY_MAIN="/workspace/ComfyUI/main.py"
     fi
 
     if [[ -n "$COMFY_MAIN" ]]; then

@@ -14,6 +14,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict
 
+# Ensure ComfyUI modules can be resolved from workspace and container
+for p in ("/workspace/ComfyUI", "/ComfyUI"):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 import runpod
 
 from comfy_client import ComfyClient, ComfyUIExecutionError, ComfyUITimeoutError
@@ -193,7 +198,13 @@ def ensure_comfyui_running(timeout_seconds: int = 90) -> bool:
     import subprocess
     import psutil
 
-    comfy_entry = "/workspace/ComfyUI/main.py" if os.path.exists("/workspace/ComfyUI/main.py") else "/ComfyUI/main.py"
+    if os.path.exists("/workspace/ComfyUI/main.py") and os.path.exists("/workspace/ComfyUI/comfy/options.py"):
+        comfy_entry = "/workspace/ComfyUI/main.py"
+    elif os.path.exists("/ComfyUI/main.py"):
+        comfy_entry = "/ComfyUI/main.py"
+    else:
+        comfy_entry = "/workspace/ComfyUI/main.py"
+
     cmd = [
         sys.executable,
         comfy_entry,
@@ -215,7 +226,9 @@ def ensure_comfyui_running(timeout_seconds: int = 90) -> bool:
 
     if not found and os.path.exists(comfy_entry):
         logger.info(f"Spawning ComfyUI process: {' '.join(cmd)}")
-        subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        spawn_env = os.environ.copy()
+        spawn_env["PYTHONPATH"] = f"/workspace/ComfyUI:/ComfyUI:{spawn_env.get('PYTHONPATH', '')}"
+        subprocess.Popen(cmd, env=spawn_env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     return client.is_ready(timeout_seconds=timeout_seconds, poll_interval=2.0)
 
